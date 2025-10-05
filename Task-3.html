@@ -1,0 +1,159 @@
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced Styling and JavaScript Task</title>
+
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #e0f7fa, #e1bee7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      color: #2e7d32;
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    /* Carousel Styles */
+    .carousel {
+      position: relative;
+      width: 80%;
+      max-width: 500px;
+      margin: 30px auto;
+      overflow: hidden;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .carousel img {
+      width: 100%;
+      display: block;
+      border-radius: 15px;
+      transition: transform 0.5s ease-in-out;
+    }
+
+    .buttons {
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    button {
+      background-color: #2e7d32;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      margin: 5px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      background-color: #388e3c;
+    }
+
+    /* Joke Section */
+    .joke-box {
+      background: white;
+      padding: 20px;
+      margin-top: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 80%;
+      max-width: 500px;
+    }
+
+    #joke {
+      font-size: 18px;
+      color: #4a148c;
+      margin-bottom: 15px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      body {
+        background: linear-gradient(135deg, #f1f8e9, #fce4ec);
+      }
+      h1 {
+        font-size: 22px;
+      }
+      button {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+      .joke-box, .carousel {
+        width: 95%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>🌟 Advanced Styling and JavaScript Task 🌟</h1>
+
+  <!-- Image Carousel -->
+  <div class="carousel">
+    <img id="carouselImage" src="https://picsum.photos/500/300?random=1" alt="Carousel Image">
+  </div>
+  <div class="buttons">
+    <button onclick="prevImage()">⬅ Prev</button>
+    <button onclick="nextImage()">Next ➡</button>
+  </div>
+
+  <!-- Joke Fetcher -->
+  <div class="joke-box">
+    <h2>😂 Random Joke Generator</h2>
+    <div id="joke">Click the button to get a joke!</div>
+    <button onclick="getJoke()">Get a Joke</button>
+  </div>
+
+  <script>
+    // -------- IMAGE CAROUSEL ----------
+    const images = [
+      "https://picsum.photos/500/300?random=1",
+      "https://picsum.photos/500/300?random=2",
+      "https://picsum.photos/500/300?random=3",
+      "https://picsum.photos/500/300?random=4"
+    ];
+    let index = 0;
+
+    function showImage() {
+      document.getElementById("carouselImage").src = images[index];
+    }
+
+    function nextImage() {
+      index = (index + 1) % images.length;
+      showImage();
+    }
+
+    function prevImage() {
+      index = (index - 1 + images.length) % images.length;
+      showImage();
+    }
+
+    // Auto-slide every 3 seconds
+    setInterval(nextImage, 3000);
+
+    // -------- FETCH DATA FROM API ----------
+    async function getJoke() {
+      try {
+        const response = await fetch("https://official-joke-api.appspot.com/random_joke");
+        const data = await response.json();
+        document.getElementById("joke").innerHTML = `${data.setup} <br><b>${data.punchline}</b>`;
+      } catch (error) {
+        document.getElementById("joke").innerHTML = "Oops! Could not fetch a joke. Try again!";
+      }
+    }
+  </script>
+</body>
+</html>

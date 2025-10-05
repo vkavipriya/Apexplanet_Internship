@@ -1,0 +1,162 @@
+<html>
+<head>
+  <title>Intermediate HTML, CSS, and JavaScript</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f5fdfd;
+      color: #333;
+    }
+    header {
+      background: #009688;
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 20px;
+      padding: 20px;
+    }
+    .sidebar {
+      background: #e0f2f1;
+      padding: 15px;
+      border-radius: 10px;
+    }
+    .content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      color: #00695c;
+    }
+    /* Contact Form Styling */
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    input, textarea, button {
+      padding: 10px;
+      font-size: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      background: #009688;
+      color: white;
+      cursor: pointer;
+      border: none;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #004d40;
+    }
+    /* To-Do List */
+    #todo-list {
+      margin-top: 20px;
+    }
+    #todo-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px;
+      background: #f1f1f1;
+      margin: 5px 0;
+      border-radius: 6px;
+    }
+    #todo-list button {
+      background: red;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    /* Responsive Layout */
+    @media (max-width: 768px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Intermediate HTML, CSS, and JavaScript</h1>
+  </header>
+  <div class="container">
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+      <h2>Navigation</h2>
+      <ul>
+        <li><a href="#contact">Contact Form</a></li>
+        <li><a href="#todo">To-Do List</a></li>
+      </ul>
+    </div>
+    <!-- Main Content -->
+    <div class="content">
+      <!-- Contact Form -->
+      <section id="contact">
+        <h2>Contact Form</h2>
+        <form id="contactForm">
+          <input type="text" id="name" placeholder="Your Name" required>
+          <input type="email" id="email" placeholder="Your Email" required>
+          <textarea id="message" rows="4" placeholder="Your Message" required></textarea>
+          <button type="submit">Submit</button>
+        </form>
+        <p id="formMsg"></p>
+      </section>
+      <!-- To-Do List -->
+      <section id="todo">
+        <h2>Dynamic To-Do List</h2>
+        <input type="text" id="taskInput" placeholder="Enter a task">
+        <button onclick="addTask()">Add Task</button>
+        <ul id="todo-list"></ul>
+      </section>
+    </div>
+  </div>
+  <script>
+    // Form Validation
+    document.getElementById("contactForm").addEventListener("submit", function(event) {
+      event.preventDefault();
+      let name = document.getElementById("name").value.trim();
+      let email = document.getElementById("email").value.trim();
+      let message = document.getElementById("message").value.trim();
+      let msg = document.getElementById("formMsg");
+
+      let emailPattern = /^[^ ]+@[^ ]+\.[a-z]{2,3}$/;
+
+      if (name === "" || email === "" || message === "") {
+        msg.style.color = "red";
+        msg.textContent = "⚠️ All fields are required!";
+      } else if (!email.match(emailPattern)) {
+        msg.style.color = "red";
+        msg.textContent = "⚠️ Please enter a valid email!";
+      } else {
+        msg.style.color = "green";
+        msg.textContent = "✅ Form submitted successfully!";
+      }
+    });
+    // To-Do List Functionality
+    function addTask() {
+      let taskInput = document.getElementById("taskInput");
+      let taskText = taskInput.value.trim();
+      if (taskText === "") return;
+      let li = document.createElement("li");
+      li.textContent = taskText;
+      let removeBtn = document.createElement("button");
+      removeBtn.textContent = "X";
+      removeBtn.onclick = function() {
+        li.remove();
+      };
+      li.appendChild(removeBtn);
+      document.getElementById("todo-list").appendChild(li);
+      taskInput.value = "";
+    }
+  </script>
+</body>
+</html>

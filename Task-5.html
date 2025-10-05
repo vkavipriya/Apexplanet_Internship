@@ -1,0 +1,307 @@
+<html>
+<head>
+  <title>Capstone Mini App — Projects</title>
+  <style>
+    :root{--bg:#f7fbf9;--card:#fff;--accent:#1f9;--muted:#555}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+    body{background:linear-gradient(180deg,#eaf7f0 0%,#f7fbf9 60%);color:#123;padding:20px;display:flex;flex-direction:column;gap:18px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    h1{margin:0;font-size:1.25rem}
+    .container{max-width:1100px;margin:0 auto;width:100%}
+    .row{display:flex;gap:20px;align-items:flex-start}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 6px 20px rgba(20,30,40,0.07);padding:16px;flex:1}
+    .left{min-width:280px;flex-basis:340px}
+    label{display:block;margin-bottom:6px;font-weight:600;font-size:.9rem}
+    input[type=text],textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e3e7ea;font-size:0.95rem}
+    button{cursor:pointer;border:0;padding:10px 14px;border-radius:8px;background:#0b7; color:#003; font-weight:700}
+    .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:12px}
+    .project{padding:12px;border-radius:10px;background:linear-gradient(180deg,#fff,#fbfffd);display:flex;flex-direction:column;gap:8px}
+    .thumb{height:120px;border-radius:8px;overflow:hidden;display:block}
+    .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+    .meta{font-size:0.85rem;color:var(--muted)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .small{padding:8px 10px;font-size:0.9rem;border-radius:8px;background:#eef}
+    footer{font-size:0.85rem;color:#567;text-align:center;margin-top:6px}
+    /* Responsive tweaks */
+    @media (max-width:880px){.row{flex-direction:column}.left{order:2}}
+    /* Accessibility focus */
+    :focus{outline:3px solid rgba(0,120,80,0.18);outline-offset:2px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Final Project — Mini Capstone</h1>
+      <div>
+        <strong>Tasks:</strong> Full web app • Performance • Cross-browser & Responsive
+      </div>
+    </header>
+    <section class="row" aria-label="main content">
+      <aside class="card left" aria-labelledby="formHeading">
+        <h2 id="formHeading" style="margin-top:0">Create / Edit Project</h2>
+        <form id="projectForm" novalidate>
+          <label for="title">Project title</label>
+          <input id="title" name="title" type="text" required placeholder="e.g., Personal portfolio" />
+          <label for="description">Short description</label>
+          <textarea id="description" name="description" rows="3" placeholder="What does it do?"></textarea>
+          <label for="imageUrl">Image URL (optional)</label>
+          <input id="imageUrl" name="imageUrl" type="text" placeholder="Add an image URL (will lazy-load)" />
+          <label for="category">Category</label>
+          <select id="category" name="category">
+            <option>Portfolio</option>
+            <option>Blog</option>
+            <option>E-commerce</option>
+            <option>Utility</option>
+          </select>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button id="saveBtn" type="submit">Save Project</button>
+            <button id="clearBtn" type="button" class="small">Clear Form</button>
+            <button id="seedBtn" type="button" class="small">Seed Demo</button>
+          </div>
+        </form>
+        <div style="margin-top:12px;color:#456;font-size:0.9rem">
+          <strong>Notes:</strong> This single-file app stores projects in <code>localStorage</code> (lightweight backend). Images use <code>loading="lazy"</code> to defer offscreen loads.
+        </div>
+      </aside>
+      <main class="card" aria-live="polite">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h2 style="margin:0">Projects</h2>
+          <div>
+            <input id="search" placeholder="Search projects..." style="padding:8px 10px;border-radius:8px;border:1px solid #e3e7ea" />
+          </div>
+        </div>
+        <div id="projects" class="list" aria-label="projects list" style="margin-top:12px"></div>
+        <div id="empty" class="meta" style="margin-top:12px;display:none">No projects yet — create one on the left.</div>
+      </main>
+    </section>
+    <footer>
+      Built for internship task • demonstrates optimization & responsiveness • Works on modern browsers.
+    </footer>
+  </div>
+  <script>
+  (function () {
+    'use strict';
+    function $(s){ return document.querySelector(s); }
+    function $all(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+    var STORE = 'capstone_projects_v1';
+    var form = $('#projectForm');
+    var title = $('#title');
+    var desc = $('#description');
+    var img = $('#imageUrl');
+    var cat = $('#category');
+    var projectsWrap = $('#projects');
+    var empty = $('#empty');
+    var search = $('#search');
+    var saveBtn = $('#saveBtn');
+    var clearBtn = $('#clearBtn');
+    var seedBtn = $('#seedBtn');
+    var editingId = null;
+    var projects = [];
+
+    function load() {
+      try {
+        var raw = localStorage.getItem(STORE);
+        projects = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        console.warn('Storage read failed', e);
+        projects = [];
+      }
+    }
+
+    function saveStore() {
+      try {
+        localStorage.setItem(STORE, JSON.stringify(projects));
+      } catch (e) {
+        console.warn('Storage write failed', e);
+      }
+    }
+    function debounce(fn, wait){
+      var t;
+      return function(){
+        var args = arguments;
+        clearTimeout(t);
+        t = setTimeout(function(){ fn.apply(null,args); }, wait);
+      };
+    }
+    function render(filter){
+      projectsWrap.innerHTML = '';
+      var list = projects.slice(0).reverse(); // newest first
+      if (filter){
+        var f = filter.toLowerCase();
+        list = list.filter(function(p){ return p.title.toLowerCase().indexOf(f) !== -1 || (p.description||'').toLowerCase().indexOf(f)!==-1; });
+      }
+      if (!list.length) {
+        empty.style.display = 'block';
+      } else {
+        empty.style.display = 'none';
+        list.forEach(function(p){
+          var el = document.createElement('article');
+          el.className = 'project';
+          el.setAttribute('role','article');
+          el.innerHTML = ''
+            + '<div class="thumb" aria-hidden="' + (p.image? 'false':'true') + '">'
+            +   (p.image ? ('<img data-src="'+escapeHTML(p.image)+'" alt="'+escapeHTML(p.title)+'" loading="lazy" />') : ('<div style="background:linear-gradient(45deg,#eef,#f8fff8);height:100%;display:flex;align-items:center;justify-content:center;color:#6a8;font-weight:700">No Image</div>'))
+            + '</div>'
+            + '<div><strong>'+escapeHTML(p.title)+'</strong><div class="meta">'+escapeHTML(p.category)+'</div></div>'
+            + '<div style="flex:1;color:#345">'+escapeHTML(p.description||'')+'</div>'
+            + '<div class="actions">'
+            +   '<button class="edit small" data-id="'+p.id+'">Edit</button>'
+            +   '<button class="delete small" data-id="'+p.id+'">Delete</button>'
+            + '</div>'
+          ;
+          projectsWrap.appendChild(el);
+        });
+        activateLazyImages();
+      }
+    }
+    function escapeHTML(s){
+      if (!s) return '';
+      return String(s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; });
+    }
+
+    function id(){
+      return 'p_' + Date.now() + '_' + Math.floor(Math.random()*10000);
+    }
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var t = title.value.trim();
+      if (!t){ title.focus(); return; }
+      var obj = {
+        id: editingId || id(),
+        title: t,
+        description: desc.value.trim(),
+        image: img.value.trim(),
+        category: cat.value,
+        updated: Date.now()
+      };
+      if (editingId){
+        for (var i=0;i<projects.length;i++){
+          if (projects[i].id === editingId){ projects[i] = obj; break; }
+        }
+        editingId = null;
+      } else {
+        projects.push(obj);
+      }
+      saveStore();
+      render(search.value);
+      form.reset();
+      title.focus();
+    });
+
+    clearBtn.addEventListener('click', function(){ form.reset(); editingId=null; title.focus(); });
+    projectsWrap.addEventListener('click', function(e){
+      var t = e.target;
+      if (t.matches('.edit')){
+        var pid = t.getAttribute('data-id');
+        editProject(pid);
+      } else if (t.matches('.delete')){
+        var pid = t.getAttribute('data-id');
+        if (confirm('Delete project?')) { deleteProject(pid); }
+      }
+    });
+
+    function editProject(pid){
+      var p = projects.find(function(x){ return x.id===pid; });
+      if (!p) return;
+      editingId = p.id;
+      title.value = p.title;
+      desc.value = p.description;
+      img.value = p.image;
+      cat.value = p.category;
+      title.focus();
+      if (window.innerWidth < 880) { window.scrollTo({top:0,behavior:'smooth'}); }
+    }
+
+    function deleteProject(pid){
+      projects = projects.filter(function(x){ return x.id !== pid; });
+      saveStore();
+      render(search.value);
+    }
+    seedBtn.addEventListener('click', function(){
+      projects = projects.concat([
+        { id:id(), title:'Portfolio Website', description:'A responsive single-page portfolio with contact form.', image:'https://picsum.photos/seed/portfolio/800/500', category:'Portfolio', updated:Date.now() },
+        { id:id(), title:'Mini E-shop', description:'A product listing with cart demo using localStorage.', image:'https://picsum.photos/seed/shop/800/500', category:'E-commerce', updated:Date.now() },
+        { id:id(), title:'Blog Engine', description:'Lightweight blog with markdown preview.', image:'', category:'Blog', updated:Date.now() }
+      ]);
+      saveStore();
+      render(search.value);
+    });
+    search.addEventListener('input', debounce(function(e){
+      render(e.target.value);
+    }, 220));
+    function activateLazyImages(){
+      var imgs = projectsWrap.querySelectorAll('img[data-src]');
+      if (!imgs || !imgs.length) return;
+      if ('IntersectionObserver' in window){
+        var obs = new IntersectionObserver(function(entries, observer){
+          entries.forEach(function(entry){
+            if (entry.isIntersecting){
+              var img = entry.target;
+              img.src = img.getAttribute('data-src');
+              img.removeAttribute('data-src');
+              observer.unobserve(img);
+            }
+          });
+        }, {rootMargin:'200px 0px'});
+        [].forEach.call(imgs, function(i){ obs.observe(i); });
+      } else {
+        [].forEach.call(imgs, function(i){ i.src = i.getAttribute('data-src'); i.removeAttribute('data-src'); });
+      }
+    }
+    if (!Element.prototype.matches) {
+      Element.prototype.matches = Element.prototype.msMatchesSelector || Element.prototype.webkitMatchesSelector;
+    }
+    if (!Element.prototype.closest) {
+      Element.prototype.closest = function(s){
+        var el = this;
+        while (el && el.nodeType === 1){
+          if (el.matches(s)) return el;
+          el = el.parentElement || el.parentNode;
+        }
+        return null;
+      };
+    }
+    var pendingRender = false;
+    function scheduleRender() {
+      if (pendingRender) return;
+      pendingRender = true;
+      requestAnimationFrame(function(){
+        render(search.value);
+        pendingRender = false;
+      });
+    }
+    load();
+    scheduleRender();
+    window.addEventListener('storage', function(){
+      load();
+      scheduleRender();
+    }, false);
+    if ('serviceWorker' in navigator){
+      try {
+        var swCode = "\
+self.addEventListener('install', function(e){ e.waitUntil(caches.open('capstone-v1').then(function(c){ return c.addAll(['/','/index.html']); })); self.skipWaiting(); });\
+self.addEventListener('activate', function(e){ e.waitUntil(self.clients.claim()); });\
+self.addEventListener('fetch', function(e){ \
+  var req = e.request; \
+  if (req.method !== 'GET') return; \
+  e.respondWith(caches.match(req).then(function(resp){ return resp || fetch(req).then(function(f){ var c = caches.open('capstone-v1'); c.then(function(cache){ cache.put(req, f.clone()); }); return f.clone(); }); })); \
+});";
+        var blob = new Blob([swCode], {type:'application/javascript'});
+        navigator.serviceWorker.register(URL.createObjectURL(blob)).then(function(reg){
+        }).catch(function(err){
+          console.warn('SW registration failed',err);
+        });
+      } catch (e){
+        console.warn('Service worker: feature check failed', e);
+      }
+    }
+    window.capstone = {
+      dump: function(){ console.log(projects); },
+      clearAll: function(){ projects = []; saveStore(); render(''); }
+    };
+
+  })();
+  </script>
+</body>
+</html>
